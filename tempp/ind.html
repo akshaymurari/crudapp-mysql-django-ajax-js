@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static './bootstrapcss&js/css/bootstrap.css' %}">
+    <script src="{% static './jquery.js' %}"></script>
+    <title>Document</title>
+    <style>
+        .l-r{
+            background: rgba(250,0,0,0.4);
+        }
+        .l-b{
+            background: #4688c2;
+        }
+        .w-s{
+            word-spacing: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <main>
+            <div class="container l-b mt-5 card-header">
+                <h3 class="text-black-50 text-center w-s">Django function based Ajax Crud bootstrap 5 project</h3>
+            </div>
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-md-4 mr-md-4 pl-0">
+                        <div class="card-header mb-3 l-b text-center">Add person</div>
+                            {%csrf_token%}
+                            <div class="form-group formm">
+                                <label for="name">Name</label>
+                                <input type="text" name="name" id="name" class="form-control name">
+                                <label for="email">Email</label>
+                                <input type="email" name="email" id="email" class="form-control email">
+                                <label for="pass">password</label>
+                                <input type="password" name="pass" id="pass" class="form-control pass">
+                                <input type="submit" class="btn btn-outline-success mt-4 add" value="Add"> 
+                                <input type="text" style="visibility: hidden;height:0;width:0" value="0" name="answer" id="ans">
+                            </div>
+                    </div>
+                    <div class="col pl-0 mr-0 pr-0">
+                        <div class="card-header mb-3 l-b text-center m-0">Added information of person</div>
+                        <table class="table table-bordered border-4 table-hover">
+                            <thead class="">
+                                <tr>
+                                    <th>id</th>
+                                    <th>name</th>
+                                    <th>email</th>
+                                    <th>password</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="tb">
+                                {% for i in obj %}
+                                <tr class="{{i.name}}">
+                                    <td id="id">{{i.id}}</td>
+                                    <td id="name">{{i.name}}</td>
+                                    <td id="email">{{i.email}}</td>
+                                    <td id="pass">{{i.password}}</td>
+                                    <td class="">
+                                        <button class="btn btn-warning edit" value="{{i.name}}" >Edit</button> 
+                                        <button class="btn btn-danger del" value="{{i.name}}" >delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+<script>
+    EDIT=false;
+    EditData=null;
+    console.log($('#ans').attr('value'))
+    let ans="password is empty";
+    $('tbody').on("click",".del",function(){
+        console.log("in out");
+        $('.new').remove();
+        $.ajax({
+            url:'/dele',
+            method:'POST',
+            data:{'name':$(this).val(),'csrfmiddlewaretoken':$("input[name='csrfmiddlewaretoken']").val()},
+            success:(arg)=>{
+                console.log(arg);
+                $("tr."+arg.ob).remove();
+            }
+        })
+    })
+    $('tbody').on("click",".edit",function(){
+        /*console.log($(".tb").html());
+        console.log($('tr.'+$(this).val()).html());
+        console.log('tr.'+$(this).val()+" td#name");*/
+        $('input#name').val($('tr.'+$(this).val()+" td#name").text());
+        $('input#email').val($('tr.'+$(this).val()+" td#email").text());
+        $('input#pass').val($('tr.'+$(this).val()+" td#pass").text());
+        EditData={"name":$('tr.'+$(this).val()+" td#name").text(),"email":$('tr.'+$(this).val()+" td#email").text(),"pass":$('tr.'+$(this).val()+" td#pass").text(),'csrfmiddlewaretoken':$("input[name='csrfmiddlewaretoken']").val()};
+        EDIT=true;
+    })
+    let cond=()=>{
+        if(document.getElementById('name').value.trim()=='' || document.getElementById('name').value==undefined)
+        {
+            ans='name is empty';
+            return false;
+        }
+        if(document.getElementById('email').value.trim()=='' || document.getElementById('email').value==undefined)
+        {
+            ans='email is empty';
+            return false;
+        }
+        if(document.getElementById('pass').value.trim()=='' || document.getElementById('pass').value==undefined)
+        {
+            ans='password is empty';
+            return false;
+        }
+        return true;
+    }
+    $('.add').click(function(){
+        let a={'name':$('.name').val(),'email':$('.email').val(),'password':$('.pass').val(),'csrfmiddlewaretoken':$("input[name='csrfmiddlewaretoken']").val()};
+        /*let xhr=new XMLHttpRequest();
+        let url='/add?name='+$('.name').val()+'&email='+$('.email').val()+'&password='+$('.pass');
+        xhr.onreadystatechange=()=>{
+            if(xhr.readyState==4 && xhr.status==200)
+            {
+                console.log(xhr.responseText);
+                $('.new').remove();
+                if(cond())
+                {
+                    if(xhr.responseText=="true")
+                    {
+                        $(".tb").append("<tr><td>4</td><td>"+$('.name').val()+"</td><td>"+$('.pass').val()+"</td><td>"+$('.email').val()+"</td><td class=''><button class='btn btn-warning'>Edit</button> <button class='btn btn-danger '>delete</button></td></tr>")
+                    }
+                    $('.formm').append('<div class="alert alert-success new">added successfully</div>');
+                    $('#ans').attr("value","1");
+                }
+                else
+                {
+                    $('.formm').append('<div class="alert alert-danger new">'+ans+'</div>');
+                    $('#ans').attr("value","0");
+                }
+            }
+        }
+        xhr.open("GET",url,true);
+        xhr.send();*/
+        //{#% include "ind1.html" %#}
+        if(EDIT)
+        {
+            console.log(EditData);
+            $.ajax({
+                url:'edit',
+                method:'POST',
+                data:EditData,
+                success:(arg)=>{
+                    $('.email').val("");
+                    $('.name').val("");
+                    $(".pass").val("");
+                    console.log(arg);
+                    $("tr."+EditData["name"]).fadeOut(100);
+                    EDIT = false;
+                    EditData=null;
+                }
+            })
+        }
+            console.log(cond());
+            if(cond())
+            {
+                event.preventDefault();
+                $.ajax({
+                    url:'/add',
+                    method: 'POST',
+                    data:a,
+                    success:(arg)=>{
+                        console.log(arg["l"]);
+                        if(arg["obj"]=="true")
+                        {
+                            $(".tb").append("<tr class="+$('.name').val()+"><td>"+arg["l"]+"</td><td id='name'>"+$('.name').val()+"</td><td id='email'>"+$('.email').val()+"</td><td id='pass'>"+$('.pass').val()+"</td><td class=''><button class='btn btn-warning edit' value="+$('.name').val()+" >Edit</button> <button class='btn btn-danger del' value="+$('.name').val()+">delete</button></td></tr>");
+                            $('.email').val("");
+                            $('.name').val("");
+                            $(".pass").val("");
+                            console.log(cond()+"lccllc");
+                            console.log($('.tb').html());
+                        }
+                    }
+                });
+                event.preventDefault()
+                $('.formm').append('<div class="alert alert-success new">added successfully</div>');
+                $('#ans').attr("value","1");
+                console.log( $('.email').val());
+            }
+            else
+            {
+                console.log(ans);
+                $('.formm').append('<div class="alert alert-danger new">'+ans+'</div>');
+                $('#ans').attr("value","0");
+            }
+            console.log("sslss");
+        $('.new').remove();
+      /*  console.log(cond());
+        if(cond())
+        {
+            event.preventDefault();
+            $.ajax({
+                url:'/add',
+                method: 'POST',
+                data:a,
+                success:(arg)=>{
+                    console.log(arg["l"]);
+                    if(arg["obj"]=="true")
+                    {
+                        $(".tb").append("<tr class="+$('.name').val()+"><td>"+arg["l"]+"</td><td id='name'>"+$('.name').val()+"</td><td id='email'>"+$('.email').val()+"</td><td id='pass'>"+$('.pass').val()+"</td><td class=''><button class='btn btn-warning edit' value="+$('.name').val()+" >Edit</button> <button class='btn btn-danger del' value="+$('.name').val()+">delete</button></td></tr>");
+                        $('.email').val("");
+                        $('.name').val("");
+                        $(".pass").val("");
+                        console.log(cond()+"lccllc");
+                        console.log($('.tb').html());
+                    }
+                }
+            });
+            event.preventDefault()
+            $('.formm').append('<div class="alert alert-success new">added successfully</div>');
+            $('#ans').attr("value","1");
+            console.log( $('.email').val());
+        }
+        else
+        {
+            console.log(ans);
+            $('.formm').append('<div class="alert alert-danger new">'+ans+'</div>');
+            $('#ans').attr("value","0");
+        }
+        console.log("sslss");*/
+    })
+</script>
+</html>
